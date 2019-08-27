@@ -6,15 +6,15 @@
         <h3 class="title">Login Form</h3>
       </div>
 
-      <el-form-item prop="username">
+      <el-form-item prop="phone">
         <span class="svg-container">
           <svg-icon icon-class="user" />
         </span>
         <el-input
-          ref="username"
-          v-model="loginForm.username"
-          placeholder="Username"
-          name="username"
+          ref="phone"
+          v-model="loginForm.phone"
+          placeholder="姓名"
+          name="phone"
           type="text"
           tabindex="1"
           auto-complete="on"
@@ -30,7 +30,7 @@
           ref="password"
           v-model="loginForm.password"
           :type="passwordType"
-          placeholder="Password"
+          placeholder="密码"
           name="password"
           tabindex="2"
           auto-complete="on"
@@ -39,6 +39,22 @@
         <span class="show-pwd" @click="showPwd">
           <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
         </span>
+      </el-form-item>
+      <el-form-item>
+        <el-col :span="12">
+          <el-input
+          ref="verify_code"
+          v-model="loginForm.verify_code"
+          placeholder="验证码"
+          name="password"
+          tabindex="3"
+          auto-complete="on"
+          @keyup.enter.native="handleLogin"
+        /></el-col>
+        <el-col :span="12">
+            <img  :src="imgdata" style="float: right" @click="getCaptcha">
+       </el-col>
+
       </el-form-item>
 
       <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
@@ -53,14 +69,15 @@
 </template>
 
 <script>
-import { validUsername } from '@/utils/validate'
+import { isPhone } from '@/utils/validate'
+import { getCaptcha } from '@/api/user'
 
 export default {
   name: 'Login',
   data() {
-    const validateUsername = (rule, value, callback) => {
-      if (!validUsername(value)) {
-        callback(new Error('Please enter the correct user name'))
+    const validatePhone = (rule, value, callback) => {
+      if (!isPhone(value)) {
+        callback(new Error('Please enter the correct phone'))
       } else {
         callback()
       }
@@ -74,16 +91,23 @@ export default {
     }
     return {
       loginForm: {
-        username: 'admin',
-        password: '111111'
+        phone: '13606626700',
+        password: '123456',
+        idkey: null,
+        verify_code: null
       },
       loginRules: {
-        username: [{ required: true, trigger: 'blur', validator: validateUsername }],
+        phone: [{ required: true, trigger: 'blur', validator: validatePhone }],
         password: [{ required: true, trigger: 'blur', validator: validatePassword }]
       },
       loading: false,
       passwordType: 'password',
-      redirect: undefined
+      redirect: undefined,
+      captchaForm: {
+        id: null,
+        captcha_type: 1
+      },
+      imgdata: null
     }
   },
   watch: {
@@ -94,7 +118,17 @@ export default {
       immediate: true
     }
   },
+  created() {
+    this.getCaptcha()
+  },
   methods: {
+    getCaptcha() {
+      getCaptcha(this.captchaForm).then(res => {
+        this.imgdata = res.data
+        this.captchaForm.id = res.idkey
+        this.loginForm.idkey = res.idkey
+      })
+    },
     showPwd() {
       if (this.passwordType === 'password') {
         this.passwordType = ''
